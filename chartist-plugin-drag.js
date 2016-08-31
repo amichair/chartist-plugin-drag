@@ -17,6 +17,7 @@
         pointClass: 'ct-point', // class used as selector for points
         updateWhileDragging: true, // update element's ct:value attribute and simulate mouseout/over
                                    // events while dragging so e.g. tooltip plugin will be updated
+        updateSegments: false, // move adjacent line segments when updating a point
         updateCallback: undefined, // callback invoked when data is updated
 
         // the following classes are added to draggable elements under various conditions
@@ -80,6 +81,38 @@
             var indices = point.getAttribute(options.attribute).split(',');
             var series = chart.data.series[indices[0]].data;
             return arguments.length > 2 ? (series[indices[1]] = data) : series[indices[1]];
+        }
+
+        // updates entire line segments along with updated point
+        function updateSegments(data) {
+            var series = data.chart.data.series[data.seriesIndex].data;
+            if (series.length < 3)
+                return; // there are no segments
+            var slope = function(i) { return (series[i].y - series[i - 1].y) / (series[i].x - series[i - 1].x); };
+            var sameSegment = function(s1, s2) { return Math.abs(s1 - s2) < 0.01; };
+            var index = data.index;
+            var sl, i;
+            // find previous index where slope changes
+            i = index;
+            sl = slope(Math.max(i, 1));
+            while (i > 0 && sameSegment(sl, slope(i)))
+                i--;
+            var first = i > 0 ? i + 1 : i;
+            // find next index where slope changes
+            i = index + 1;
+            sl = slope(Math.min(i, series.length - 1));
+            while (i < series.length && sameSegment(sl, slope(i)))
+                i++;
+            var last = i < series.length ? i - 2 : i - 1;
+            // move all points in the segments linearly
+            var x = data.oldData.x;
+            var dy = data.newData.y - data.oldData.y;
+            var range = series[index].x - series[first].x || 1;
+            for (i = first; i < index; i++)
+                series[i].y += dy * (1 - Math.abs(x - series[i].x) / range);
+            range = series[last].x - series[index].x || 1;
+            for (i = index; i <= last; i++)
+                series[i].y += dy * (1 - Math.abs(x - series[i].x) / range);
         }
 
         function createConverter(axisX, axisY) {
@@ -239,7 +272,10 @@
                         var preventDefault = options.updateCallback
                             && options.updateCallback(data) === false;
                         if (!preventDefault) {
-                            pointData(chart, dragged, data.newData);
+                            if (options.updateSegments)
+                                updateSegments(data);
+                            else
+                                pointData(chart, dragged, data.newData);
                             chart.update();
                         }
                     }
