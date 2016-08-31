@@ -78,10 +78,8 @@
         // gets/sets the underlying data for a point on the chart
         function pointData(chart, point, data) {
             var indices = point.getAttribute(options.attribute).split(',');
-            var series = chart.data.series[indices[0]];
-            if (arguments.length > 2)
-                series.data[indices[1]] = data;
-            return series.data[indices[1]];
+            var series = chart.data.series[indices[0]].data;
+            return arguments.length > 2 ? (series[indices[1]] = data) : series[indices[1]];
         }
 
         function createConverter(axisX, axisY) {
