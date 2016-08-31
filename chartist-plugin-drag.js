@@ -229,12 +229,17 @@
                     return;
                 // if dropped inside chart then update, otherwise ignore
                 if (inRect(getDragRect(container), info.clientX, info.clientY)) {
-                    var delta = calcDelta();
-                    if (delta.changed) {
+                    var data = calcDelta();
+                    if (data.changed) {
+                        var indices = dragged.getAttribute(options.attribute).split(',');
+                        data.chart = chart;
+                        data.element = dragged;
+                        data.seriesIndex = parseInt(indices[0]);
+                        data.index = parseInt(indices[1]);
                         var preventDefault = options.updateCallback
-                            && options.updateCallback(delta, dragged, chart) === false;
+                            && options.updateCallback(data) === false;
                         if (!preventDefault) {
-                            pointData(chart, dragged, delta.newData);
+                            pointData(chart, dragged, data.newData);
                             chart.update();
                         }
                     }
