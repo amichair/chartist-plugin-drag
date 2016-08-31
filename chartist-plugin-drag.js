@@ -1,5 +1,5 @@
 /**
- * Chartist.js plugin to enable drag & drop of line chart
+ * Chartist.js plugin that enables drag & drop of line chart
  * points as a means of updating the underlying data.
  *
  * Copyright (c) 2016 Amichai Rothman
@@ -43,7 +43,7 @@
             element.setAttribute('class', classes.join(' '));
         }
 
-        // enables/disables the given class name(s) on an element
+        // adds/removes the given class name(s) from an element
         function toggleClass(element, enable, className) {
             var list = classes(element); // get element classes list
             for (var i = 2; i < arguments.length; i++) {
