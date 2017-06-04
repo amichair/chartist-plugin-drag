@@ -2,7 +2,7 @@
  * Chartist.js plugin that enables drag & drop of line chart
  * points as a means of updating the underlying data.
  *
- * Copyright (c) 2016 Amichai Rothman
+ * Copyright (c) 2016-2017 Amichai Rothman
  * Licensed under the MIT License.
  */
 
@@ -121,12 +121,14 @@
             return {
                 axisX: axisX,
                 axisY: axisY,
-                minX: rx.min,
-                minY: ry.min,
-                ratioX: (rx.max - rx.min) / axisX.axisLength,
-                ratioY: (ry.max - ry.min) / axisY.axisLength,
-                convertX: function(x) { return this.minX + x * this.ratioX; },
-                convertY: function(y) { return this.minY + y * this.ratioY; }
+                minX: rx.min, // minimal X axis range value
+                minY: ry.min, // minimal Y axis range value
+                ratioX: (rx.max - rx.min) / axisX.axisLength, // X units per pixel
+                ratioY: (ry.max - ry.min) / axisY.axisLength, // Y units per pixel
+                convertDX: function(x) { return x * this.ratioX; }, // X pixel count to value units
+                convertDY: function(y) { return y * this.ratioY; }, // Y pixel count to value units
+                convertX: function(x) { return this.minX + this.convertDX(x); }, // X position to value
+                convertY: function(y) { return this.minY + this.convertDY(y); } // Y position to value
             };
         }
 
@@ -194,8 +196,8 @@
                 return {
                     oldData: data,
                     newData: Chartist.extend({}, data, {
-                        x: data.x + converter.convertX(dx),
-                        y: data.y + converter.convertY(dy)
+                        x: data.x + converter.convertDX(dx),
+                        y: data.y + converter.convertDY(dy)
                     }),
                     changed: dx !== 0 || dy !== 0,
                     converter: converter,
