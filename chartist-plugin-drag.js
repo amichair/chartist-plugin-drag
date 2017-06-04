@@ -76,16 +76,23 @@
             });
         }
 
+        function getSeriesData(chart, seriesIndex) {
+            // series is either a plain array of values (e.g. if the X axis is just
+            // an array of labels rather than values), or an object containing a data property
+            var series = chart.data.series[seriesIndex];
+            return series.data || series;
+        }
+
         // gets/sets the underlying data for a point on the chart
         function pointData(chart, point, data) {
             var indices = point.getAttribute(options.attribute).split(',');
-            var series = chart.data.series[indices[0]].data;
+            var series = getSeriesData(chart, indices[0]);
             return arguments.length > 2 ? (series[indices[1]] = data) : series[indices[1]];
         }
 
         // updates entire line segments along with updated point
         function updateSegments(data) {
-            var series = data.chart.data.series[data.seriesIndex].data;
+            var series = getSeriesData(data.chart, data.seriesIndex);
             if (series.length < 3)
                 return; // there are no segments
             var slope = function(i) { return (series[i].y - series[i - 1].y) / (series[i].x - series[i - 1].x); };
@@ -116,8 +123,8 @@
         }
 
         function createConverter(axisX, axisY) {
-            var rx = axisX.range;
-            var ry = axisY.range;
+            var rx = axisX.range || { min: 0, max: 0 }; // undefined if there is no range (just labels)
+            var ry = axisY.range || { min: 0, max: 0 };
             return {
                 axisX: axisX,
                 axisY: axisY,
@@ -195,10 +202,12 @@
                 // return data and context for use in updateCallback
                 return {
                     oldData: data,
-                    newData: Chartist.extend({}, data, {
-                        x: data.x + converter.convertDX(dx),
-                        y: data.y + converter.convertDY(dy)
-                    }),
+                    newData: data.x === undefined // either scalar value or object with x,y
+                        ? data + converter.convertDY(dy)
+                        : Chartist.extend({}, data, {
+                            x: data.x + converter.convertDX(dx),
+                            y: data.y + converter.convertDY(dy)
+                        }),
                     changed: dx !== 0 || dy !== 0,
                     converter: converter,
                     dx: dx,
@@ -303,8 +312,11 @@
                 // update data and simulate mouseout+mouseover events
                 // as workaround for updating e.g. the tooltip plugin
                 if (options.updateWhileDragging && !touch) {
-                    var delta = calcDelta();
-                    marker.element.setAttribute('ct:value', delta.newData.x + ',' + delta.newData.y);
+                    var data = calcDelta();
+                    var value = data.newData.x === undefined // either scalar value or object with x,y
+                        ? data.newData
+                        : (data.newData.x + ',' + data.newData.y);
+                    marker.element.setAttribute('ct:value', value);
                     marker.element.dispatchEvent(new MouseEvent('mouseout', event));
                     marker.element.dispatchEvent(new MouseEvent('mouseover', event));
                 }
