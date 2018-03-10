@@ -100,24 +100,22 @@
                 (series[i].y - series[i - 1].y) / (series[i].x - series[i - 1].x); };
             var sameSegment = function(s1, s2) { return Math.abs(s1 - s2) < 0.1; };
             var index = data.index;
-            var sl, i;
             // find previous index where slope changes
-            i = index;
-            sl = slope(Math.max(i, 1));
-            while (i > 0 && sameSegment(sl, slope(i)))
-                i--;
-            var first = i > 0 ? i + 1 : i;
+            var first = index;
+            var sl = slope(Math.max(first, 1));
+            while (first > 0 && sameSegment(sl, slope(first)))
+                first--;
             // find next index where slope changes
-            i = index + 1;
-            sl = slope(Math.min(i, series.length - 1));
-            while (i < series.length && sameSegment(sl, slope(i)))
-                i++;
-            var last = i < series.length ? i - 2 : i - 1;
+            var last = index + 1;
+            sl = slope(Math.min(last, series.length - 1));
+            while (last < series.length && sameSegment(sl, slope(last)))
+                last++;
+            last--;
             // move all points in the segments linearly
             var x = data.oldData.x;
             var dy = data.newData.y - data.oldData.y;
             var range = series[index].x - series[first].x || 1;
-            for (i = first; i < index; i++)
+            for (var i = first; i < index; i++)
                 series[i].y += dy * (1 - Math.abs(x - series[i].x) / range);
             range = series[last].x - series[index].x || 1;
             for (i = index; i <= last; i++)
