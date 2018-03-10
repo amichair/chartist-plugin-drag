@@ -283,7 +283,7 @@
                         var preventDefault = options.updateCallback
                             && options.updateCallback(data) === false;
                         if (!preventDefault) {
-                            if (options.updateSegments)
+                            if (options.updateSegments && !event.shiftKey)
                                 updateSegments(data);
                             else
                                 pointData(chart, dragged, data.newData);
