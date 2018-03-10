@@ -95,8 +95,10 @@
             var series = getSeriesData(data.chart, data.seriesIndex);
             if (series.length < 3)
                 return; // there are no segments
-            var slope = function(i) { return (series[i].y - series[i - 1].y) / (series[i].x - series[i - 1].x); };
-            var sameSegment = function(s1, s2) { return Math.abs(s1 - s2) < 0.01; };
+            var slopeNormalizer = data.converter.ratioX / data.converter.ratioY;
+            var slope = function(i) { return slopeNormalizer *
+                (series[i].y - series[i - 1].y) / (series[i].x - series[i - 1].x); };
+            var sameSegment = function(s1, s2) { return Math.abs(s1 - s2) < 0.1; };
             var index = data.index;
             var sl, i;
             // find previous index where slope changes
