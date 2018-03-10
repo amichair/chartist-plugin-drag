@@ -120,6 +120,7 @@
             range = series[last].x - series[index].x || 1;
             for (i = index; i <= last; i++)
                 series[i].y += dy * (1 - Math.abs(x - series[i].x) / range);
+            return { first: first, last: last };
         }
 
         function createConverter(axisX, axisY) {
@@ -283,10 +284,12 @@
                         var preventDefault = options.updateCallback
                             && options.updateCallback(data) === false;
                         if (!preventDefault) {
-                            if (options.updateSegments && !event.shiftKey)
-                                updateSegments(data);
-                            else
+                            if (options.updateSegments && !event.shiftKey) {
+                                data.modifiedRange = updateSegments(data);
+                            } else {
                                 pointData(chart, dragged, data.newData);
+                                data.modifiedRange = { first: data.index, last: data.index };
+                            }
                             chart.eventEmitter.emit('drag.update', data);
                             chart.update(data.chart.data);
                         }
