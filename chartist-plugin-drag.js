@@ -287,6 +287,7 @@
                                 updateSegments(data);
                             else
                                 pointData(chart, dragged, data.newData);
+                            chart.eventEmitter.emit('drag.update', data);
                             chart.update(data.chart.data);
                         }
                     }
