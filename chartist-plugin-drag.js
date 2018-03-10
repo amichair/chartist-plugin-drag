@@ -287,7 +287,7 @@
                                 updateSegments(data);
                             else
                                 pointData(chart, dragged, data.newData);
-                            chart.update();
+                            chart.update(data.chart.data);
                         }
                     }
                     if (highlighted) // restore highlight if still on same element
