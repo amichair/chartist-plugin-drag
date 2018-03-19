@@ -64,18 +64,6 @@
             return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
         }
 
-        // adds an event handler on an element, filtered by optional selector
-        function on(eventNames, element, selector, callback) {
-            eventNames.split(' ').forEach(function(name) {
-                var touch = name.indexOf('touch') > -1;
-                element.addEventListener(name, function(event) {
-                    var info = touch ? event.changedTouches[event.changedTouches.length - 1] : event;
-                    if (!selector || classes(info.target).indexOf(selector) > -1)
-                        callback(event, info, touch);
-                });
-            });
-        }
-
         function getSeriesData(chart, seriesIndex) {
             // series is either a plain array of values (e.g. if the X axis is just
             // an array of labels rather than values), or an object containing a data property
@@ -179,7 +167,50 @@
             return (grid || container).getBoundingClientRect();
         }
 
+        // manages registration of event handlers
+        var handlers = {
+            // registered event handlers metadata objects
+            handlers: [],
+
+            // registers event handlers (arguments are passed to createHandlers)
+            on: function(eventNames, element, selector, callback) {
+                var created = this.createHandlers(eventNames, element, selector, callback);
+                created.forEach(function(h) { h.on(); });
+                this.handlers = this.handlers.concat(created);
+            },
+
+            // unregisters all event handlers
+            off: function() {
+                this.handlers.forEach(function(h) { h.off(); });
+                this.handlers = [];
+            },
+
+            // creates event handler metadata objects for an element,
+            // filtered by optional selector
+            createHandlers: function(eventNames, element, selector, callback) {
+                return eventNames.split(' ').map(function(name) {
+                    var touch = name.indexOf('touch') > -1;
+                    return {
+                        name: name,
+                        on: function() { element.addEventListener(this.name, this.handler); },
+                        off: function() { element.removeEventListener(this.name, this.handler); },
+                        handler: function(event) {
+                            var info = touch ? event.changedTouches[event.changedTouches.length - 1] : event;
+                            if (!selector || classes(info.target).indexOf(selector) > -1)
+                                callback(event, info, touch);
+                        }
+                    };
+                });
+            }
+        };
+
         return function drag(chart) {
+
+            // a hack to allow the plugin creator to manually detach it (e.g. remove listeners),
+            // until Chartist provides a standard way of doing it
+            if (arguments[1] === 'detach') {
+                return handlers.off();
+            }
 
             // currently only line charts are supported
             if (!(chart instanceof Chartist.Line))
@@ -230,7 +261,7 @@
             });
 
             // show marker on potential drag point
-            on('mouseover', container, pointSelector, function(event) {
+            handlers.on('mouseover', container, pointSelector, function(event) {
                 if (dragged)
                     return;
                 highlighted = event.target;
@@ -238,7 +269,7 @@
             });
 
             // hide marker on potential drag point
-            on('mouseout', container, pointSelector, function(event) {
+            handlers.on('mouseout', container, pointSelector, function(event) {
                 if (dragged)
                     return;
                 highlighted = null;
@@ -246,13 +277,13 @@
             });
 
             // disable text selection in chart (which conflicts with dragging)
-            on('mousedown', container, null, function(event) {
+            handlers.on('mousedown', container, null, function(event) {
                 event.preventDefault();
                 return false;
             });
 
             // start drag
-            on('mousedown touchstart', container, pointSelector, function(event, info, touch) {
+            handlers.on('mousedown touchstart', container, pointSelector, function(event, info, touch) {
                 if (!event.button) { // only left-click, or event.button prop not supported
                     if (touch)
                         event.preventDefault(); // prevent equivalent mouse events
@@ -269,7 +300,7 @@
             });
 
             // end drag
-            on('mouseup touchend', document, null, function(event, info) {
+            handlers.on('mouseup touchend', document, null, function(event, info) {
                 if (!dragged)
                     return;
                 // if dropped inside chart then update, otherwise ignore
@@ -304,7 +335,7 @@
             });
 
             // track drag movement
-            on('mousemove touchmove', container, null, function(event, info, touch) {
+            handlers.on('mousemove touchmove', container, null, function(event, info, touch) {
                 if (!dragged)
                     return;
                 if (touch)
@@ -325,6 +356,6 @@
                     marker.element.dispatchEvent(new MouseEvent('mouseover', event));
                 }
             });
-        }
+        };
     };
 }(window, document, Chartist));
